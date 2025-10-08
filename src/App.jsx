@@ -12,7 +12,7 @@ import NotFound from "./pages/NotFound";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
 import Faqs from "./pages/Faqs";
-import Privacy from "./pages/privacy";
+import Privacy from "./pages/Privacy";
 import UserChat from "./components/UserChat";
 import DoctorChat from "./components/DoctorChat";
 
