@@ -948,7 +948,7 @@ const PatientList = ({ patients }) => {
       Email: p.email,
       Age: p.age,
       Gender: p.gender,
-      "Phone No": p.phoneno,
+      "Phone No": p.phone,
       Symptoms: p.symptoms,
       Specialist: p.specialist,
       Status: p.status,
@@ -1029,7 +1029,7 @@ const PatientList = ({ patients }) => {
                     {patient.name}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {patient.email} / {patient.phoneno}
+                    {patient.email} / {patient.phone}
                   </div>
                 </td>
                 <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1078,7 +1078,7 @@ const UserList = ({ users }) => {
     const csvData = users.map((u) => ({
       Name: u.name,
       Gender: u.gender,
-      Phone: u.phone || u.mobno,
+      Phone: u.phone,
       Email: u.email,
       Age: u.age,
       Pincode: u.pincode,
@@ -1145,7 +1145,7 @@ const UserList = ({ users }) => {
               <tr key={user.id || user._id}>
                 <td className="px-3 py-4">{user.name}</td>
                 <td className="px-3 py-4">{user.gender}</td>
-                <td className="px-3 py-4">{user.phone || user.mobno}</td>
+                <td className="px-3 py-4">{user.phone}</td>
                 <td className="px-3 py-4">{user.email}</td>
                 <td className="px-3 py-4">{user.age}</td>
                 <td className="px-3 py-4">{user.pincode}</td>
