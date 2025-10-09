@@ -8,6 +8,8 @@ import {
   Lock,
   LogIn,
   UserPlus,
+  Eye,
+  EyeOff,
   Phone,
   MapPin,
   ClipboardList,
@@ -99,43 +101,68 @@ const FormInput = ({
   onChange,
   required = false,
   error = "",
-}) => (
-  <div className="mb-4">
-    <label
-      htmlFor={id}
-      className="block text-sm font-medium text-gray-700 mb-1"
-    >
-      {label}{" "}
-      {optional && (
-        <span className="text-xs text-gray-400 font-normal">(Optional)</span>
-      )}
-    </label>
-    <div className="relative rounded-md shadow-sm">
-      {Icon && (
-        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-          <Icon
-            className={`w-5 h-5 ${error ? "text-red-400" : "text-gray-400"}`}
-          />
-        </div>
-      )}
-      <input
-        type={type}
-        id={id}
-        name={id}
-        required={required}
-        className={`block w-full rounded-lg border ${
-          error
-            ? "border-red-500 focus:ring-red-500 focus:border-red-500"
-            : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
-        } sm:text-sm p-3 transition duration-150 ${Icon ? "pl-10" : "pl-3"}`}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-      />
+}) => {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const isPassword = type === "password";
+
+  return (
+    <div className="mb-4 relative">
+      <label
+        htmlFor={id}
+        className="block text-sm font-medium text-gray-700 mb-1"
+      >
+        {label}{" "}
+        {optional && (
+          <span className="text-xs text-gray-400 font-normal">(Optional)</span>
+        )}
+      </label>
+
+      <div className="relative rounded-md shadow-sm">
+        {Icon && (
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Icon
+              className={`w-5 h-5 ${error ? "text-red-400" : "text-gray-400"}`}
+            />
+          </div>
+        )}
+
+        <input
+          type={isPassword && showPassword ? "text" : type}
+          id={id}
+          name={id}
+          required={required}
+          className={`block w-full rounded-lg border ${
+            error
+              ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+              : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+          } sm:text-sm p-3 transition duration-150 ${Icon ? "pl-10" : "pl-3"} ${
+            isPassword ? "pr-10" : ""
+          }`}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+        />
+
+        {/* 👁️ Eye icon for password toggle */}
+        {isPassword && (
+          <div
+            className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-400 hover:text-gray-600"
+            onClick={() => setShowPassword((prev) => !prev)}
+          >
+            {showPassword ? (
+              <EyeOff className="w-5 h-5" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </div>
+        )}
+      </div>
+
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
     </div>
-    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-  </div>
-);
+  );
+};
 
 // --- User Register Form ---
 const UserRegisterForm = ({ formData, handleChange, notify }) => {
