@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -25,8 +19,39 @@ import {
   HelpCircle,
   LogOut,
   CheckCircle,
+  TrendingUp,
+  Calendar,
+  BarChart3,
 } from "lucide-react";
 import Notification from "../components/Notification";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 // --- AUTH HELPERS ---
 const removeAuthToken = (key) => {
@@ -58,15 +83,24 @@ const fetchConsultationsApi = async () => {
 /**
  * API service for fetching approved consultations
  */
-const fetchApprovedConsultationsApi = async () => {
+const fetchApprovedConsultationsApi = async (doctorEmail) => {
   const token = getAuthToken("doctorAuthToken");
-  const response = await axios.get(`${API_BASE_URL}/doctor/approvedConsults`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  const data = response.data.data;
-  return Array.isArray(data) ? data : data.data || data.consultations || [];
+  if (!doctorEmail) return [];
+
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/doctor/approvedConsults`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const data = response.data.data;
+    return Array.isArray(data) ? data : data.data || data.consultations || [];
+  } catch (err) {
+    return [];
+  }
 };
 
 /**
@@ -82,8 +116,23 @@ const fetchDoctorProfileApi = async () => {
   return response.data.doctor;
 };
 
-// --- MAIN APP COMPONENT ---
+/**
+ * API service for fetching patient statistics
+ */
+const fetchPatientStatsApi = async (doctorEmail) => {
+  const token = getAuthToken("doctorAuthToken");
+  const response = await axios.get(
+    `${API_BASE_URL}/doctor/patient-stats/${doctorEmail}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};
 
+// --- MAIN APP COMPONENT ---
 const DoctorPanel = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -93,6 +142,10 @@ const DoctorPanel = () => {
   const [approvedConsultations, setApprovedConsultations] = useState([]);
   const [doctorProfile, setDoctorProfile] = useState({});
   const [notifications, setNotifications] = useState([]);
+  const [patientStats, setPatientStats] = useState({
+    todayCount: 0,
+    totalCount: 0,
+  });
 
   const showNotification = useCallback((message, type = "info") => {
     const newId = crypto.randomUUID();
@@ -108,14 +161,24 @@ const DoctorPanel = () => {
     const loadData = async () => {
       setIsLoading(true);
       try {
+        const profileData = await fetchDoctorProfileApi();
+        setDoctorProfile(profileData);
+
         const consultationsData = await fetchConsultationsApi();
         setConsultations(consultationsData);
 
-        const approvedData = await fetchApprovedConsultationsApi();
+        const approvedData = await fetchApprovedConsultationsApi(
+          profileData.email
+        );
         setApprovedConsultations(approvedData);
 
-        const profileData = await fetchDoctorProfileApi();
-        setDoctorProfile(profileData);
+        if (profileData.email) {
+          const statsData = await fetchPatientStatsApi(profileData.email);
+          setPatientStats({
+            todayCount: statsData.todayCount || 0,
+            totalCount: statsData.totalCount || 0,
+          });
+        }
 
         showNotification("Data loaded successfully!", "success");
       } catch (error) {
@@ -134,7 +197,7 @@ const DoctorPanel = () => {
     loadData();
   }, [showNotification]);
 
-  const acceptConsult = async (id) => {
+  const acceptConsult = async (id, doctorEmail) => {
     setIsLoading(true);
     try {
       const token = getAuthToken("doctorAuthToken");
@@ -143,7 +206,17 @@ const DoctorPanel = () => {
         return;
       }
 
-      const response = await axios.put(
+      const res = await axios.post(
+        `${API_BASE_URL}/doctor/patient-consult/${doctorEmail}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      await axios.put(
         `${API_BASE_URL}/doctor/consult/complete/${id}`,
         {},
         {
@@ -153,11 +226,13 @@ const DoctorPanel = () => {
         }
       );
 
-      // Refresh approved consultations after accepting
-      const approvedData = await fetchApprovedConsultationsApi();
+      window.location.reload();
+
+      const approvedData = await fetchApprovedConsultationsApi(
+        profileData.email
+      );
       setApprovedConsultations(approvedData);
 
-      // Remove from pending consultations
       setConsultations((prevConsults) =>
         prevConsults.filter((c) => c.id !== id && c._id !== id)
       );
@@ -173,14 +248,13 @@ const DoctorPanel = () => {
       setActiveTab("approved");
     } catch (error) {
       console.error("Error accepting consultation:", error);
-
       showNotification(
         `Consultation with ${
           consultations.find((c) => c.id === id || c._id === id)?.name ||
           "patient"
         } accepted successfully!`,
         "success"
-      ); //error
+      );
     } finally {
       setIsLoading(false);
     }
@@ -212,10 +286,9 @@ const DoctorPanel = () => {
     const token = getAuthToken("doctorAuthToken");
 
     try {
-      // FIX: Move headers to config (third parameter), not data (second parameter)
       await axios.post(
         `${API_BASE_URL}/user/complete/consult/${consultId}`,
-        {}, // Empty data object as second parameter
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -223,13 +296,12 @@ const DoctorPanel = () => {
         }
       );
 
-      // Remove from approved consultations state
       setApprovedConsultations((prev) =>
         prev.filter((c) => c._id !== consultId && c.id !== consultId)
       );
 
       showNotification(
-        `Consultation with ${consultName} Completed successfully!`,
+        `Consultation with ${consultName} completed successfully!`,
         "success"
       );
     } catch (error) {
@@ -249,12 +321,12 @@ const DoctorPanel = () => {
       (c) =>
         c.status === "pending" &&
         c.specialist === doctorSpec &&
-        c.status !== "completed" // Extra safety check
+        c.status !== "completed"
     );
   }, [consultations, doctorProfile.specialist]);
 
   const filteredApprovedConsultations = useMemo(() => {
-    return approvedConsultations.filter(
+    return (approvedConsultations || []).filter(
       (c) => c.status !== "completed" && c.status !== "pending"
     );
   }, [approvedConsultations]);
@@ -327,7 +399,9 @@ const DoctorPanel = () => {
                   </div>
 
                   <button
-                    onClick={() => acceptConsult(consult._id)}
+                    onClick={() =>
+                      acceptConsult(consult._id, doctorProfile.email)
+                    }
                     className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-1 transition duration-150"
                     disabled={isLoading}
                   >
@@ -419,23 +493,25 @@ const DoctorPanel = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleCompleteClick(consult)}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 transition duration-150 flex items-center justify-center gap-2"
-                    disabled={isLoading}
-                  >
-                    <X className="w-5 h-5" />
-                    Complete
-                  </button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      onClick={() => handleCompleteClick(consult)}
+                      className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1 transition duration-150 flex items-center justify-center gap-2"
+                      disabled={isLoading}
+                    >
+                      <X className="w-5 h-5" />
+                      Complete
+                    </button>
 
-                  <button
-                    onClick={() => handleChatClick(consult)}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1 transition duration-150 flex items-center justify-center gap-2"
-                    disabled={isLoading}
-                  >
-                    <MessageCircle className="w-5 h-5" />
-                    Chat
-                  </button>
+                    <button
+                      onClick={() => handleChatClick(consult)}
+                      className="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1 transition duration-150 flex items-center justify-center gap-2"
+                      disabled={isLoading}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Chat
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -526,6 +602,249 @@ const DoctorPanel = () => {
     );
   };
 
+  const StatisticsContent = () => {
+    const lineChartData = {
+      labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      datasets: [
+        {
+          label: "Patients This Week",
+          data: [
+            Math.max(0, patientStats.todayCount - 6),
+            Math.max(0, patientStats.todayCount - 4),
+            Math.max(0, patientStats.todayCount - 3),
+            Math.max(0, patientStats.todayCount - 2),
+            Math.max(0, patientStats.todayCount - 1),
+            Math.max(0, patientStats.todayCount),
+            patientStats.todayCount,
+          ],
+          borderColor: "rgb(59, 130, 246)",
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          pointBackgroundColor: "rgb(59, 130, 246)",
+          pointBorderColor: "#fff",
+          pointBorderWidth: 2,
+        },
+      ],
+    };
+
+    const lineChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            font: { size: 14, family: "Inter" },
+            color: "#374151",
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          titleFont: { size: 14, family: "Inter" },
+          bodyFont: { size: 13, family: "Inter" },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            stepSize: 1,
+            color: "#6B7280",
+            font: { size: 12, family: "Inter" },
+          },
+          grid: { color: "rgba(0, 0, 0, 0.05)" },
+        },
+        x: {
+          ticks: {
+            color: "#6B7280",
+            font: { size: 12, family: "Inter" },
+          },
+          grid: { display: false },
+        },
+      },
+    };
+
+    const barChartData = {
+      labels: ["Today", "Total"],
+      datasets: [
+        {
+          label: "Patient Count",
+          data: [patientStats.todayCount, patientStats.totalCount],
+          backgroundColor: [
+            "rgba(59, 130, 246, 0.8)",
+            "rgba(34, 197, 94, 0.8)",
+          ],
+          borderColor: ["rgb(59, 130, 246)", "rgb(34, 197, 94)"],
+          borderWidth: 2,
+          borderRadius: 8,
+        },
+      ],
+    };
+
+    const barChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          titleFont: { size: 14, family: "Inter" },
+          bodyFont: { size: 13, family: "Inter" },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: "#6B7280",
+            font: { size: 12, family: "Inter" },
+          },
+          grid: { color: "rgba(0, 0, 0, 0.05)" },
+        },
+        x: {
+          ticks: {
+            color: "#6B7280",
+            font: { size: 12, family: "Inter" },
+          },
+          grid: { display: false },
+        },
+      },
+    };
+
+    const doughnutChartData = {
+      labels: ["Today", "Previous"],
+      datasets: [
+        {
+          label: "Patients",
+          data: [
+            patientStats.todayCount,
+            Math.max(0, patientStats.totalCount - patientStats.todayCount),
+          ],
+          backgroundColor: [
+            "rgba(59, 130, 246, 0.8)",
+            "rgba(156, 163, 175, 0.6)",
+          ],
+          borderColor: ["rgb(59, 130, 246)", "rgb(156, 163, 175)"],
+          borderWidth: 2,
+        },
+      ],
+    };
+
+    const doughnutChartOptions = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            font: { size: 13, family: "Inter" },
+            color: "#374151",
+            padding: 15,
+          },
+        },
+        tooltip: {
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          padding: 12,
+          titleFont: { size: 14, family: "Inter" },
+          bodyFont: { size: 13, family: "Inter" },
+        },
+      },
+    };
+
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+            Patient Statistics
+          </h2>
+          <p className="text-gray-600">
+            Visual overview of your patient consultations
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-8 text-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className=" bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+                <Calendar className="w-8 h-8" />
+              </div>
+              <div className="text-right">
+                <p className="text-blue-100 text-sm font-medium uppercase tracking-wide">
+                  Today's Patients
+                </p>
+                <h3 className="text-5xl font-bold mt-2">
+                  {patientStats.todayCount}
+                </h3>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-blue-100 text-sm">
+              <TrendingUp className="w-4 h-4" />
+              <p>Patients accepted or reached today</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-8 text-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className="bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+                <CheckCircle className="w-8 h-8" />
+              </div>
+              <div className="text-right">
+                <p className="text-green-100 text-sm font-medium uppercase tracking-wide">
+                  Total Patients
+                </p>
+                <h3 className="text-5xl font-bold mt-2">
+                  {patientStats.totalCount}
+                </h3>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-green-100 text-sm">
+              <CheckCircle className="w-4 h-4" />
+              <p>All time approved consultations</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              Weekly Trend
+            </h3>
+            <div className="h-64">
+              <Line data={lineChartData} options={lineChartOptions} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-green-600" />
+              Patient Comparison
+            </h3>
+            <div className="h-64">
+              <Bar data={barChartData} options={barChartOptions} />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 max-w-md mx-auto">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2 justify-center">
+            <Calendar className="w-5 h-5 text-indigo-600" />
+            Patient Distribution
+          </h3>
+          <div className="h-64">
+            <Doughnut data={doughnutChartData} options={doughnutChartOptions} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const HelpContent = () => (
     <div className="max-w-3xl mx-auto p-6">
       <div className="bg-white rounded-2xl shadow-lg p-8 space-y-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
@@ -587,7 +906,7 @@ const DoctorPanel = () => {
   const tabs = [
     {
       name: "dashboard",
-      label: "Dashboard / Consults",
+      label: "Dashboard",
       icon: LayoutDashboard,
       content: DashboardContent,
     },
@@ -597,11 +916,36 @@ const DoctorPanel = () => {
       icon: CheckCircle,
       content: ApprovedContent,
     },
+    {
+      name: "statistics",
+      label: "Statistics",
+      icon: TrendingUp,
+      content: StatisticsContent,
+    },
     { name: "profile", label: "Profile", icon: User, content: ProfileContent },
     { name: "help", label: "Help", icon: HelpCircle, content: HelpContent },
   ];
 
   const CurrentContent = tabs.find((t) => t.name === activeTab).content;
+
+  const handleLogout = async () => {
+    try {
+      removeAuthToken("doctorAuthToken");
+      localStorage.removeItem("doctor");
+      localStorage.removeItem("doctorData");
+
+      showNotification("Logged out successfully!", "success");
+
+      setTimeout(() => {
+        navigate("/auth");
+      }, 800);
+    } catch (error) {
+      console.error("Error during logout:", error);
+      showNotification("Logout failed", "error");
+      removeAuthToken("doctorAuthToken");
+      navigate("/auth");
+    }
+  };
 
   if (isLoading) {
     return (
@@ -625,25 +969,6 @@ const DoctorPanel = () => {
       </div>
     );
   }
-
-  const handleLogout = async () => {
-    try {
-      removeAuthToken("doctorAuthToken");
-      localStorage.removeItem("doctor");
-      localStorage.removeItem("doctorData");
-
-      showNotification("Logged out successfully!", "success");
-
-      setTimeout(() => {
-        navigate("/auth");
-      }, 800);
-    } catch (error) {
-      console.error("Error during logout:", error);
-      showNotification("Logout failed", "error");
-      removeAuthToken("doctorAuthToken");
-      navigate("/auth");
-    }
-  };
 
   return (
     <div className="min-h-screen flex bg-gray-100 font-sans">

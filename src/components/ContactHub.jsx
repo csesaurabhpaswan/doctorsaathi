@@ -1,36 +1,36 @@
 import React from "react";
 import { useState } from "react";
 
-import {FaPhoneAlt,
+import {
+  FaPhoneAlt,
   FaWhatsapp,
   FaEnvelope,
   FaAngleUp,
   FaHeadset,
 } from "react-icons/fa";
 
-
-export default function  FloatingContactHub(){
+export default function FloatingContactHub() {
   const [isOpen, setIsOpen] = useState(false);
 
   const CONTACT_LINKS = [
     {
       icon: <FaPhoneAlt className="w-5 h-5" />,
       label: "Call Us",
-      link: "tel:+919876543210",
+      link: "tel:+91729658250",
       bgColor: "bg-blue-600",
       hoverColor: "hover:bg-blue-700",
     },
     {
       icon: <FaWhatsapp className="w-5 h-5" />,
       label: "WhatsApp",
-      link: "https://wa.me/919876543210",
+      link: "https://wa.me/919565264562",
       bgColor: "bg-green-500",
       hoverColor: "hover:bg-green-600",
     },
     {
       icon: <FaEnvelope className="w-5 h-5" />,
       label: "Email",
-      link: "mailto:support@doctorsaathi.com",
+      link: "mailto:team.servana@gmail.com",
       bgColor: "bg-red-500",
       hoverColor: "hover:bg-red-600",
     },
@@ -40,7 +40,6 @@ export default function  FloatingContactHub(){
     <div className="fixed bottom-6 right-24 z-40 flex flex-col items-end">
       {/* Animated Contact Links */}
       <style>{`
-        /* ... (CSS Keyframes remain the same) ... */
         @keyframes pulse-slow {
           0%,
           100% {
@@ -166,4 +165,4 @@ export default function  FloatingContactHub(){
       </button>
     </div>
   );
-};
+}

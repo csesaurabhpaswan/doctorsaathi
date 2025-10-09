@@ -18,10 +18,41 @@ import {
   Phone,
   MessageSquare,
   Stethoscope,
+  TrendingUp,
+  BarChart3,
+  PieChart,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import Notification from "../components/Notification";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line, Bar, Doughnut, Pie } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -174,6 +205,576 @@ const FormInput = ({
     </div>
   </div>
 );
+
+// --- STATISTICS COMPONENT ---
+const Statistics = () => {
+  const [doctorStats, setDoctorStats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchDoctorStats = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem("adminAuthToken");
+        const response = await axios.get(
+          `${API_BASE_URL}/admin/alldoctors-stats`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setDoctorStats(response.data.data || []);
+        setError("");
+      } catch (err) {
+        setError("Failed to load doctor statistics");
+        setDoctorStats([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDoctorStats();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader className="w-12 h-12 text-indigo-600 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-100 text-red-700 p-6 rounded-xl">
+        <p className="font-semibold">{error}</p>
+      </div>
+    );
+  }
+
+  // Calculate totals
+  const totalTodayConsults = doctorStats.reduce(
+    (sum, doc) => sum + (doc.todayCount || 0),
+    0
+  );
+  const totalAllConsults = doctorStats.reduce(
+    (sum, doc) => sum + (doc.totalCount || 0),
+    0
+  );
+
+  // Prepare data for charts
+  const doctorNames = doctorStats.map(
+    (doc) => doc.doctorDetails?.name || "Unknown"
+  );
+  const todayCounts = doctorStats.map((doc) => doc.todayCount || 0);
+  const totalCounts = doctorStats.map((doc) => doc.totalCount || 0);
+
+  // Color palette
+  const colors = [
+    "rgba(59, 130, 246, 0.8)",
+    "rgba(16, 185, 129, 0.8)",
+    "rgba(245, 158, 11, 0.8)",
+    "rgba(239, 68, 68, 0.8)",
+    "rgba(139, 92, 246, 0.8)",
+    "rgba(236, 72, 153, 0.8)",
+    "rgba(14, 165, 233, 0.8)",
+    "rgba(34, 197, 94, 0.8)",
+  ];
+
+  const borderColors = [
+    "rgb(59, 130, 246)",
+    "rgb(16, 185, 129)",
+    "rgb(245, 158, 11)",
+    "rgb(239, 68, 68)",
+    "rgb(139, 92, 246)",
+    "rgb(236, 72, 153)",
+    "rgb(14, 165, 233)",
+    "rgb(34, 197, 94)",
+  ];
+
+  // Bar Chart - Today vs Total by Doctor
+  const barChartData = {
+    labels: doctorNames,
+    datasets: [
+      {
+        label: "Today's Consultations",
+        data: todayCounts,
+        backgroundColor: "rgba(59, 130, 246, 0.8)",
+        borderColor: "rgb(59, 130, 246)",
+        borderWidth: 2,
+        borderRadius: 8,
+      },
+      {
+        label: "Total Consultations",
+        data: totalCounts,
+        backgroundColor: "rgba(34, 197, 94, 0.8)",
+        borderColor: "rgb(34, 197, 94)",
+        borderWidth: 2,
+        borderRadius: 8,
+      },
+    ],
+  };
+
+  const barChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          font: { size: 13, family: "Inter" },
+          color: "#374151",
+          padding: 15,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        titleFont: { size: 14, family: "Inter" },
+        bodyFont: { size: 13, family: "Inter" },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: "#6B7280",
+          font: { size: 12, family: "Inter" },
+        },
+        grid: { color: "rgba(0, 0, 0, 0.05)" },
+      },
+      x: {
+        ticks: {
+          color: "#6B7280",
+          font: { size: 11, family: "Inter" },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: { display: false },
+      },
+    },
+  };
+
+  // Pie Chart - Today's Distribution
+  const pieChartData = {
+    labels: doctorNames,
+    datasets: [
+      {
+        label: "Today's Consultations",
+        data: todayCounts,
+        backgroundColor: colors.slice(0, doctorStats.length),
+        borderColor: borderColors.slice(0, doctorStats.length),
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const pieChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "right",
+        labels: {
+          font: { size: 12, family: "Inter" },
+          color: "#374151",
+          padding: 10,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        titleFont: { size: 14, family: "Inter" },
+        bodyFont: { size: 13, family: "Inter" },
+      },
+    },
+  };
+
+  // Doughnut Chart - Total Distribution
+  const doughnutChartData = {
+    labels: doctorNames,
+    datasets: [
+      {
+        label: "Total Consultations",
+        data: totalCounts,
+        backgroundColor: colors.slice(0, doctorStats.length),
+        borderColor: borderColors.slice(0, doctorStats.length),
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  const doughnutChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "right",
+        labels: {
+          font: { size: 12, family: "Inter" },
+          color: "#374151",
+          padding: 10,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        titleFont: { size: 14, family: "Inter" },
+        bodyFont: { size: 13, family: "Inter" },
+      },
+    },
+  };
+
+  // Line Chart - Trend Comparison
+  const lineChartData = {
+    labels: doctorNames,
+    datasets: [
+      {
+        label: "Today's Consultations",
+        data: todayCounts,
+        borderColor: "rgb(59, 130, 246)",
+        backgroundColor: "rgba(59, 130, 246, 0.1)",
+        tension: 0.4,
+        fill: true,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "rgb(59, 130, 246)",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+      },
+      {
+        label: "Total Consultations",
+        data: totalCounts,
+        borderColor: "rgb(34, 197, 94)",
+        backgroundColor: "rgba(34, 197, 94, 0.1)",
+        tension: 0.4,
+        fill: true,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        pointBackgroundColor: "rgb(34, 197, 94)",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const lineChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          font: { size: 13, family: "Inter" },
+          color: "#374151",
+          padding: 15,
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        padding: 12,
+        titleFont: { size: 14, family: "Inter" },
+        bodyFont: { size: 13, family: "Inter" },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          color: "#6B7280",
+          font: { size: 12, family: "Inter" },
+        },
+        grid: { color: "rgba(0, 0, 0, 0.05)" },
+      },
+      x: {
+        ticks: {
+          color: "#6B7280",
+          font: { size: 11, family: "Inter" },
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: { display: false },
+      },
+    },
+  };
+
+  // Top Performers
+  const topPerformersToday = [...doctorStats]
+    .sort((a, b) => (b.todayCount || 0) - (a.todayCount || 0))
+    .slice(0, 5);
+
+  const topPerformersTotal = [...doctorStats]
+    .sort((a, b) => (b.totalCount || 0) - (a.totalCount || 0))
+    .slice(0, 5);
+
+  return (
+    <div className="space-y-8">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Doctor Statistics Dashboard
+        </h2>
+        <p className="text-gray-600">
+          Comprehensive overview of all doctor consultations
+        </p>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-8 text-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between mb-4">
+            <div className=" bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+              <Calendar className="w-8 h-8" />
+            </div>
+            <div className="text-right">
+              <p className="text-blue-100 text-sm font-medium uppercase tracking-wide">
+                Today's Total
+              </p>
+              <h3 className="text-5xl font-bold mt-2">{totalTodayConsults}</h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-blue-100 text-sm">
+            <TrendingUp className="w-4 h-4" />
+            <p>Consultations today</p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-8 text-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+              <BarChart3 className="w-8 h-8" />
+            </div>
+            <div className="text-right">
+              <p className="text-green-100 text-sm font-medium uppercase tracking-wide">
+                All Time Total
+              </p>
+              <h3 className="text-5xl font-bold mt-2">{totalAllConsults}</h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-green-100 text-sm">
+            <TrendingUp className="w-4 h-4" />
+            <p>Total consultations</p>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-8 text-white hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-opacity-20 p-3 rounded-xl backdrop-blur-sm">
+              <Stethoscope className="w-8 h-8" />
+            </div>
+            <div className="text-right">
+              <p className="text-purple-100 text-sm font-medium uppercase tracking-wide">
+                Active Doctors
+              </p>
+              <h3 className="text-5xl font-bold mt-2">{doctorStats.length}</h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-purple-100 text-sm">
+            <Users className="w-4 h-4" />
+            <p>Registered doctors</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Bar Chart */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+            Consultations Comparison
+          </h3>
+          <div className="h-80">
+            <Bar data={barChartData} options={barChartOptions} />
+          </div>
+        </div>
+
+        {/* Line Chart */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-green-600" />
+            Trend Analysis
+          </h3>
+          <div className="h-80">
+            <Line data={lineChartData} options={lineChartOptions} />
+          </div>
+        </div>
+
+        {/* Pie Chart */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-orange-600" />
+            Today's Distribution
+          </h3>
+          <div className="h-80">
+            <Pie data={pieChartData} options={pieChartOptions} />
+          </div>
+        </div>
+
+        {/* Doughnut Chart */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-purple-600" />
+            Total Distribution
+          </h3>
+          <div className="h-80">
+            <Doughnut data={doughnutChartData} options={doughnutChartOptions} />
+          </div>
+        </div>
+      </div>
+
+      {/* Top Performers */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Performers Today */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+            Top Performers Today
+          </h3>
+          <div className="space-y-3">
+            {topPerformersToday.map((doc, idx) => (
+              <div
+                key={doc._id || idx}
+                className="flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-100 hover:shadow-md transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      {doc.doctorDetails?.name}
+                    </p>
+                    <p className="font-semibold text-gray-800">
+                      {doc.doctorEmail}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs mr-10 text-gray-500">
+                  {doc.doctorDetails?.specialist}
+                </p>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {doc.todayCount}
+                  </p>
+                  <p className="text-xs text-gray-500">consultations</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Performers All Time */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-green-600" />
+            Top Performers All Time
+          </h3>
+          <div className="space-y-3">
+            {topPerformersTotal.map((doc, idx) => (
+              <div
+                key={doc._id || idx}
+                className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-100 hover:shadow-md transition"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                    {idx + 1}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      {doc.doctorDetails?.name}
+                    </p>
+                    <p className="text-xs text-gray-500">{doc.doctorEmail}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {doc.doctorDetails?.specialist}
+                </p>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-green-600">
+                    {doc.totalCount}
+                  </p>
+                  <p className="text-xs text-gray-500">consultations</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Table */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <Users className="w-5 h-5 text-indigo-600" />
+          Detailed Doctor Statistics
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  Doctor Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  Doctor Email
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+                  Specialty
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  Today
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  Total
+                </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">
+                  Average/Day
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {doctorStats.map((doc, idx) => (
+                <tr key={doc._id || idx} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {doc.doctorDetails?.name}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                      {doc.doctorEmail}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                      {doc.doctorDetails?.specialist}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-center">
+                    <span className="text-lg font-bold text-blue-600">
+                      {doc.todayCount}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-center">
+                    <span className="text-lg font-bold text-green-600">
+                      {doc.totalCount}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-center">
+                    <span className="text-sm text-gray-600">
+                      {doc.totalCount > 0
+                        ? (doc.totalCount / 30).toFixed(1)
+                        : "0.0"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // --- ASHA WORKER MANAGEMENT COMPONENTS ---
 const AshaRegistrationForm = ({
@@ -1301,6 +1902,13 @@ const AdminPanel = () => {
           Icon={Users}
           label="All Users"
         />
+        <NavItem
+          view="Statistics"
+          currentView={currentView}
+          onClick={() => navigate("Statistics")}
+          Icon={TrendingUp}
+          label="Statistics"
+        />
       </nav>
 
       <div className="p-4 border-t border-indigo-700">
@@ -1332,6 +1940,8 @@ const AdminPanel = () => {
         return <PatientList patients={patients} ashaWorkers={ashaWorkers} />;
       case "users":
         return <UserList users={users} />;
+      case "Statistics":
+        return <Statistics Statistics={Statistics} />;
       default:
         return (
           <AshaManagement
@@ -1354,6 +1964,8 @@ const AdminPanel = () => {
               ? "Doctor Management"
               : currentView === "patients"
               ? "Patient Records"
+              : currentView === "Statistics"
+              ? "Statistics"
               : "All Users"}
           </div>
           <button

@@ -7,15 +7,16 @@ import { motion } from "framer-motion";
 const teamMembers = [
   {
     name: "Varsha Rani",
-    image: "https://avatars.githubusercontent.com/u/154044871?v=4",
+    image:
+      "https://media.licdn.com/dms/image/v2/D4E35AQEP0FhyPR84iA/profile-framedphoto-shrink_800_800/B4EZm1kxjbKUAg-/0/1759687940594?e=1760626800&v=beta&t=voDxxA52cGf10gkjxlTeAhpNwIbkHVy1PrfNTYViV9A",
     bio: "Our mission is to make healthcare accessible, reliable, and convenient for every patient.",
-    linkedin: "https://linkedin.com/in/varsharani",
+    linkedin: "https://www.linkedin.com/in/varsha-rani-82226a366/",
   },
   {
     name: "Vipin Kumar",
     image: "https://avatars.githubusercontent.com/u/166358641?v=4",
     bio: "We connect patients with trusted doctors and provide a seamless online consultation experience.",
-    linkedin: "https://www.linkedin.com/in/vipin-kumar",
+    linkedin: "https://www.linkedin.com/in/vipin-kumar-04581431a/",
   },
   {
     name: "Priyaranjan",
@@ -242,9 +243,10 @@ export default function About() {
           We’re building DoctorSaathi to reshape healthcare. Let’s do it
           together.
         </p>
-        <a 
-        href="/contact"
-        className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition">
+        <a
+          href="/contact"
+          className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition"
+        >
           Get in Touch
         </a>
       </div>

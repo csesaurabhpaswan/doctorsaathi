@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { TypeAnimation } from "react-type-animation";
 import {
   FaStethoscope,
   FaPills,
@@ -588,12 +589,29 @@ const Home = () => {
         <div className="container mx-auto md:px-30 px-10 py-16 flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 space-y-6 animate-fade-in-down">
             <h1 className="text-3xl md:text-5xl font-bold text-gray-800">
-              DoctorSaathi – Your Digital Doctor, Always With You.
+              DoctorSaathi –{" "}
+              <TypeAnimation
+                sequence={[
+                  "Your Digital Doctor, Always With You.",
+                  2000,
+                  "Connect. Consult. Care.",
+                  2000,
+                  "Health Support for Everyone.",
+                  2000,
+                ]}
+                speed={50}
+                deletionSpeed={30}
+                wrapper="span"
+                repeat={Infinity}
+                className="text-emerald-700"
+              />
             </h1>
+
             <p className="text-gray-700 text-lg md:text-xl">
               Connect with trusted doctors anytime, anywhere. Simple,
               low-bandwidth, and rural-friendly.
             </p>
+
             <div className="flex flex-col sm:flex-row gap-4 mt-4 animate-fade-in-right">
               <a
                 href="/auth"
@@ -609,6 +627,7 @@ const Home = () => {
               </a>
             </div>
           </div>
+
           <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center animate-fade-in">
             <img
               src="/doctor-illustration.png"
@@ -673,11 +692,33 @@ const Home = () => {
           carouselAnimated ? animationClass : initialClass
         }`}
       >
-        <div className="container mx-auto max-w-7xl px-6 text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-10">
-            A Glimpse into Accessible Healthcare
-          </h2>
-          <ImageCarousel images={carouselImages} interval={3000} />
+        <div className="container mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center gap-10">
+          {/* Image / Carousel */}
+          <div className="w-full md:w-1/2">
+            <ImageCarousel images={carouselImages} interval={3000} />
+          </div>
+
+          {/* Text Section */}
+          <div className="w-full md:w-1/2 text-left">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              A Glimpse into Accessible Healthcare
+            </h2>
+            <p className="text-gray-700 leading-relaxed text-lg">
+              DoctorSaathi is built specifically for rural communities across
+              India. Our platform bridges the gap between healthcare
+              professionals and underserved areas, ensuring that quality medical
+              guidance is just a few taps away — no matter the device or
+              internet speed.
+            </p>
+            <p className="text-gray-700 leading-relaxed text-lg mt-4">
+              By combining simplicity, reliability, and cutting-edge technology,
+              DoctorSaathi empowers individuals to connect with verified
+              doctors, access digital prescriptions, and receive preventive
+              healthcare advice in their local language. We believe that every
+              citizen — regardless of location — deserves timely and trustworthy
+              medical support.
+            </p>
+          </div>
         </div>
       </section>
 
