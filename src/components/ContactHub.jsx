@@ -16,7 +16,7 @@ export default function FloatingContactHub() {
     {
       icon: <FaPhoneAlt className="w-5 h-5" />,
       label: "Call Us",
-      link: "tel:+91729658250",
+      link: "tel:+917209658250",
       bgColor: "bg-blue-600",
       hoverColor: "hover:bg-blue-700",
     },
