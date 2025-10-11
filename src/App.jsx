@@ -15,6 +15,9 @@ import Faqs from "./pages/Faqs";
 import Privacy from "./pages/Privacy";
 import UserChat from "./components/UserChat";
 import DoctorChat from "./components/DoctorChat";
+import DoctorSaathiDonation from "./components/Donation";
+import SuccessPage from "./components/SuccessPage";
+import CancelPage from "./components/CancelPage";
 
 // Layout with Navbar + Footer
 function MainLayout() {
@@ -76,6 +79,9 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faqs" element={<Faqs />} />
+        <Route path="/donate" element={<DoctorSaathiDonation />} />
+        <Route path="/payment/success" element={<SuccessPage />} />
+        <Route path="/payment/cancel" element={<CancelPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
