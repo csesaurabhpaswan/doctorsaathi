@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaBars, FaTimes } from "react-icons/fa";
+import { FaBars, FaTimes, FaHeart } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import DoctorSaathiBot from "./ChatBot";
 import FloatingContactHub from "./ContactHub";
@@ -60,6 +60,15 @@ const Navbar = () => {
 
             {/* Buttons */}
             <div className="flex items-center space-x-3">
+              {/* Donate Button */}
+              <Link
+                to="/donate"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg shadow-md hover:from-pink-600 hover:to-red-600 transition duration-300"
+              >
+                <FaHeart className="animate-pulse" />
+                Donate
+              </Link>
+
               {isUserLoggedIn || isDoctorLoggedIn ? (
                 <button
                   onClick={handleDashboardClick}
@@ -122,6 +131,16 @@ const Navbar = () => {
               </Link>
             ))}
 
+            {/* Donate Button - Mobile */}
+            <Link
+              to="/donate"
+              onClick={() => setIsOpen(false)}
+              className="flex justify-center items-center gap-2 py-3 bg-gradient-to-r from-pink-500 to-red-500 text-white rounded-lg font-semibold hover:from-pink-600 hover:to-red-600 transition duration-300"
+            >
+              <FaHeart className="animate-pulse" />
+              Donate
+            </Link>
+
             {isUserLoggedIn || isDoctorLoggedIn ? (
               <button
                 onClick={() => {
@@ -153,6 +172,7 @@ const Navbar = () => {
           </div>
         </div>
       </header>
+
       <DoctorSaathiBot />
       <FloatingContactHub />
     </>
