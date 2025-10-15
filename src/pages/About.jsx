@@ -8,7 +8,7 @@ const teamMembers = [
   {
     name: "Varsha Rani",
     image:
-      "https://media.licdn.com/dms/image/v2/D4E35AQEP0FhyPR84iA/profile-framedphoto-shrink_800_800/B4EZm1kxjbKUAg-/0/1759687940594?e=1760626800&v=beta&t=voDxxA52cGf10gkjxlTeAhpNwIbkHVy1PrfNTYViV9A",
+      "https://media.licdn.com/dms/image/v2/D4E35AQGE6_4QJgfnjQ/profile-framedphoto-shrink_800_800/B4EZneR7LzHMAk-/0/1760370865193?e=1761156000&v=beta&t=xGL7TKJcJcq9DISBE0rpdFNF3jJ5dMDoxnDX1NBClZs",
     bio: "Our mission is to make healthcare accessible, reliable, and convenient for every patient.",
     linkedin: "https://www.linkedin.com/in/varsha-rani-82226a366/",
   },
