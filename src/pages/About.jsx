@@ -205,7 +205,7 @@ export default function About() {
         </div>
       </motion.div>
 
-      {/* Team Section */}
+      {/* Team Section
       <div className="bg-gray-50 py-16 px-6">
         <h2 className="text-3xl font-semibold text-center mb-10">
           Meet Our Dev Team
@@ -234,7 +234,8 @@ export default function About() {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
+      
 
       {/* Call to Action / Footer Hint */}
       <div className="py-12 px-6 text-center">
